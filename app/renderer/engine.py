@@ -370,8 +370,28 @@ class PDFRenderer:
 # Synchronous wrapper for non-async contexts
 def render_pdf_sync(*args, **kwargs) -> bytes:
     """Synchronous wrapper for PDF rendering."""
-    renderer = PDFRenderer(kwargs.pop('config'))
+    logger.debug("render_pdf_sync called")
+    config = kwargs.pop('config')
+    renderer = PDFRenderer(config)
+
+    async def _render_and_close():
+        """Async function to render PDF and cleanup in single event loop."""
+        try:
+            logger.debug("Starting PDF rendering in async context...")
+            pdf_bytes = await renderer.render_to_pdf(*args, **kwargs)
+            logger.debug(f"PDF rendering completed, got {len(pdf_bytes)} bytes")
+            return pdf_bytes
+        finally:
+            logger.debug("Closing renderer browser...")
+            try:
+                await renderer.close()
+                logger.debug("Renderer browser closed successfully")
+            except Exception as e:
+                logger.warning(f"Error closing renderer: {e}")
+
     try:
-        return asyncio.run(renderer.render_to_pdf(*args, **kwargs))
-    finally:
-        asyncio.run(renderer.close())
+        logger.debug("Starting asyncio.run with combined render and close...")
+        return asyncio.run(_render_and_close())
+    except Exception as e:
+        logger.error(f"Error in render_pdf_sync: {e}", exc_info=True)
+        raise
