@@ -61,10 +61,11 @@ def parse_render_params(data: dict) -> dict:
         raise BadRequest(f"HTML size exceeds limit of {current_app.config['MAX_HTML_SIZE'] // (1024*1024)}MB")
 
     # Build params
+    # Note: format defaults to DEFAULT_FORMAT only if width/height/aspect not provided
     params = {
         'html': html,
         'url': url,
-        'format': data.get('format', current_app.config['DEFAULT_FORMAT']),
+        'format': data.get('format'),  # Don't default yet
         'width': data.get('width'),
         'height': data.get('height'),
         'aspect': data.get('aspect'),
@@ -77,9 +78,17 @@ def parse_render_params(data: dict) -> dict:
         'headers': data.get('headers', {}),
     }
 
+    # Only default to A4 if no dimensions are specified
+    if not params['format'] and not params['width'] and not params['height'] and not params['aspect']:
+        params['format'] = current_app.config['DEFAULT_FORMAT']
+
     # Validate scale
     if not 0.1 <= params['scale'] <= 2.0:
         raise BadRequest("Scale must be between 0.1 and 2.0")
+
+    # Log received parameters for debugging
+    logger.info(f"Render params: format={params['format']}, width={params['width']}, "
+                f"height={params['height']}, aspect={params['aspect']}, landscape={params['landscape']}")
 
     return params
 

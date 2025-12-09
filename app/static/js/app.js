@@ -205,6 +205,18 @@ async function generatePDF() {
             options.url = url;
         }
 
+        // Log options for debugging
+        console.log('PDF Generation Options:', {
+            format: options.format,
+            width: options.width,
+            height: options.height,
+            aspect: options.aspect,
+            landscape: options.landscape,
+            scale: options.scale
+        });
+        logToConsole(`Generating PDF with: format=${options.format || 'none'}, aspect=${options.aspect || 'none'}, ` +
+                     `width=${options.width || 'none'}, height=${options.height || 'none'}, landscape=${options.landscape}`, 'info');
+
         // Check sync mode
         const isSyncMode = document.getElementById('syncMode').checked;
 
@@ -237,9 +249,28 @@ async function generatePDFSync(options) {
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            logToConsole(`Server Error (${response.status}): ${error.message || 'Failed to generate PDF'}`, 'error', error);
-            throw new Error(error.message || 'Failed to generate PDF');
+            // Handle error responses - check if response has content
+            let errorMessage = 'Failed to generate PDF';
+            try {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const error = await response.json();
+                    errorMessage = error.message || errorMessage;
+                    logToConsole(`Server Error (${response.status}): ${errorMessage}`, 'error', error);
+                } else {
+                    // Non-JSON error response (timeout, empty response, etc.)
+                    const text = await response.text();
+                    errorMessage = text || `HTTP ${response.status}: ${response.statusText}`;
+                    logToConsole(`Server Error (${response.status}): ${errorMessage}`, 'error');
+                }
+            } catch (parseError) {
+                // Failed to parse error response
+                errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                logToConsole(`Server Error (${response.status}): ${errorMessage}`, 'error', {
+                    parseError: parseError.message
+                });
+            }
+            throw new Error(errorMessage);
         }
 
         const blob = await response.blob();
