@@ -19,6 +19,10 @@ class Config:
     API_KEY_REQUIRED = os.getenv('API_KEY_REQUIRED', 'True').lower() == 'true'
     API_KEYS = os.getenv('API_KEYS', '').split(',') if os.getenv('API_KEYS') else []
 
+    # Generation Password Protection
+    GENERATION_PASSWORD_REQUIRED = os.getenv('GENERATION_PASSWORD_REQUIRED', 'True').lower() == 'true'
+    GENERATION_PASSWORD = os.getenv('GENERATION_PASSWORD', 'Bhavani@102005')
+
     # Rate limiting (requests per minute per API key)
     RATE_LIMIT_ENABLED = os.getenv('RATE_LIMIT_ENABLED', 'True').lower() == 'true'
     RATE_LIMIT_PER_MINUTE = int(os.getenv('RATE_LIMIT_PER_MINUTE', '60'))

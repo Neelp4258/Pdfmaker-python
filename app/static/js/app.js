@@ -205,6 +205,15 @@ async function generatePDF() {
             options.url = url;
         }
 
+        // Add generation password
+        const password = document.getElementById('generationPassword').value;
+        if (!password) {
+            showToast('Generation password is required', 'error');
+            logToConsole('Generation password is required', 'error');
+            return;
+        }
+        options.password = password;
+
         // Log options for debugging
         console.log('PDF Generation Options:', {
             format: options.format,
@@ -212,7 +221,8 @@ async function generatePDF() {
             height: options.height,
             aspect: options.aspect,
             landscape: options.landscape,
-            scale: options.scale
+            scale: options.scale,
+            passwordProvided: !!password
         });
         logToConsole(`Generating PDF with: format=${options.format || 'none'}, aspect=${options.aspect || 'none'}, ` +
                      `width=${options.width || 'none'}, height=${options.height || 'none'}, landscape=${options.landscape}`, 'info');

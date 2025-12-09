@@ -46,6 +46,17 @@ def parse_render_params(data: dict) -> dict:
     Raises:
         BadRequest: If parameters are invalid
     """
+    # Check generation password
+    if current_app.config.get('GENERATION_PASSWORD_REQUIRED', True):
+        provided_password = data.get('password')
+        required_password = current_app.config.get('GENERATION_PASSWORD', 'Bhavani@102005')
+
+        if not provided_password:
+            raise BadRequest("Generation password is required")
+
+        if provided_password != required_password:
+            raise BadRequest("Invalid generation password")
+
     # Validate required fields
     html = data.get('html')
     url = data.get('url')
