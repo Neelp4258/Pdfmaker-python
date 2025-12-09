@@ -19,6 +19,9 @@
                     <h1>HTML2PDF</h1>
                 </div>
                 <div class="header-actions">
+                    <button class="btn btn-icon" id="consoleToggle" title="Toggle Console" onclick="toggleConsole()">
+                        <i class="fas fa-terminal"></i>
+                    </button>
                     <button class="btn btn-icon" id="darkModeToggle" title="Toggle Dark Mode">
                         <i class="fas fa-moon"></i>
                     </button>
@@ -221,6 +224,28 @@
                 </button>
             </div>
             <div class="job-list" id="jobList"></div>
+        </div>
+
+        <!-- Console Panel -->
+        <div class="console-panel" id="consolePanel" style="display: none;">
+            <div class="console-header">
+                <h3><i class="fas fa-terminal"></i> Console</h3>
+                <div class="console-actions">
+                    <button class="btn btn-sm" onclick="clearConsole()" title="Clear Console">
+                        <i class="fas fa-eraser"></i>
+                    </button>
+                    <button class="btn btn-sm" onclick="toggleConsole()" title="Close Console">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="console-content" id="consoleContent">
+                <div class="console-message info">
+                    <span class="console-time"></span>
+                    <span class="console-icon"><i class="fas fa-info-circle"></i></span>
+                    <span class="console-text">Console ready. Conversion errors will appear here.</span>
+                </div>
+            </div>
         </div>
 
         <!-- Toast Notifications -->

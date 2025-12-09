@@ -218,6 +218,7 @@ async function generatePDF() {
         console.error('Error generating PDF:', error);
         hideStatus();
         showToast('Failed to generate PDF: ' + error.message, 'error');
+        logToConsole(`PDF Generation Failed: ${error.message}`, 'error', error.stack ? { stack: error.stack } : null);
     }
 }
 
@@ -237,6 +238,7 @@ async function generatePDFSync(options) {
 
         if (!response.ok) {
             const error = await response.json();
+            logToConsole(`Server Error (${response.status}): ${error.message || 'Failed to generate PDF'}`, 'error', error);
             throw new Error(error.message || 'Failed to generate PDF');
         }
 
@@ -245,6 +247,7 @@ async function generatePDFSync(options) {
 
         hideStatus();
         showToast('PDF generated successfully!', 'success');
+        logToConsole(`PDF generated successfully (${(blob.size / 1024).toFixed(2)} KB)`, 'success');
 
         // Add to history
         addToHistory({
@@ -278,6 +281,7 @@ async function generatePDFAsync(options) {
 
         if (!response.ok) {
             const error = await response.json();
+            logToConsole(`Server Error (${response.status}): ${error.message || 'Failed to queue job'}`, 'error', error);
             throw new Error(error.message || 'Failed to queue job');
         }
 
@@ -285,6 +289,7 @@ async function generatePDFAsync(options) {
         const jobId = data.job_id;
 
         showToast('Job queued: ' + jobId, 'info');
+        logToConsole(`Job queued: ${jobId}`, 'info');
 
         // Add to history
         const job = {
@@ -732,4 +737,120 @@ window.addEventListener('click', (e) => {
     if (e.target === modal) {
         closeModal();
     }
+});
+
+// ===== Console Functions =====
+function toggleConsole() {
+    const consolePanel = document.getElementById('consolePanel');
+    const isVisible = consolePanel.style.display !== 'none';
+
+    if (isVisible) {
+        consolePanel.style.display = 'none';
+    } else {
+        consolePanel.style.display = 'flex';
+        // Scroll to bottom
+        const consoleContent = document.getElementById('consoleContent');
+        consoleContent.scrollTop = consoleContent.scrollHeight;
+    }
+}
+
+function clearConsole() {
+    const consoleContent = document.getElementById('consoleContent');
+    consoleContent.innerHTML = `
+        <div class="console-message info">
+            <span class="console-time">${getTime()}</span>
+            <span class="console-icon"><i class="fas fa-info-circle"></i></span>
+            <span class="console-text">Console cleared.</span>
+        </div>
+    `;
+}
+
+function logToConsole(message, type = 'info', details = null) {
+    const consoleContent = document.getElementById('consoleContent');
+    const messageEl = document.createElement('div');
+    messageEl.className = `console-message ${type}`;
+
+    const iconMap = {
+        info: 'fa-info-circle',
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        warning: 'fa-exclamation-triangle'
+    };
+
+    const icon = iconMap[type] || iconMap.info;
+
+    let content = `
+        <span class="console-time">${getTime()}</span>
+        <span class="console-icon"><i class="fas ${icon}"></i></span>
+        <span class="console-text">${escapeHtml(message)}`;
+
+    if (details) {
+        content += `<pre>${escapeHtml(JSON.stringify(details, null, 2))}</pre>`;
+    }
+
+    content += `</span>`;
+    messageEl.innerHTML = content;
+
+    consoleContent.appendChild(messageEl);
+    consoleContent.scrollTop = consoleContent.scrollHeight;
+
+    // Auto-show console on errors
+    if (type === 'error') {
+        const consolePanel = document.getElementById('consolePanel');
+        if (consolePanel.style.display === 'none') {
+            toggleConsole();
+        }
+    }
+}
+
+function getTime() {
+    const now = new Date();
+    return now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Intercept console.log, console.error for debugging
+const originalConsoleLog = console.log;
+const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
+
+console.log = function(...args) {
+    originalConsoleLog.apply(console, args);
+    logToConsole(args.join(' '), 'info');
+};
+
+console.error = function(...args) {
+    originalConsoleError.apply(console, args);
+    logToConsole(args.join(' '), 'error');
+};
+
+console.warn = function(...args) {
+    originalConsoleWarn.apply(console, args);
+    logToConsole(args.join(' '), 'warning');
+};
+
+// Capture unhandled errors
+window.addEventListener('error', (e) => {
+    logToConsole(`Unhandled Error: ${e.message}`, 'error', {
+        filename: e.filename,
+        line: e.lineno,
+        column: e.colno
+    });
+});
+
+// Capture unhandled promise rejections
+window.addEventListener('unhandledrejection', (e) => {
+    logToConsole(`Unhandled Promise Rejection: ${e.reason}`, 'error');
+});
+
+// Initialize console with welcome message
+document.addEventListener('DOMContentLoaded', () => {
+    const consoleContent = document.getElementById('consoleContent');
+    const time = getTime();
+    consoleContent.querySelector('.console-time').textContent = time;
 });
