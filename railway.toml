@@ -1,0 +1,21 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+numReplicas = 1
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+startCommand = "gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 120 app:app"
+
+[[deploy.healthcheck]]
+path = "/health"
+timeout = 100
+
+[env]
+FLASK_ENV = "production"
+DEBUG = "False"
+API_KEY_REQUIRED = "True"
+STORAGE_TYPE = "local"
+MAX_UPLOAD_SIZE_MB = "100"
+RATE_LIMIT_ENABLED = "True"

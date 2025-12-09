@@ -2,6 +2,10 @@
 
 Production-ready Python Flask service for converting HTML/URLs to pixel-perfect PDFs using headless Chromium (Playwright).
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/yourusername/Pdfmaker-python)
+[![Deploy to Railway](https://railway.app/button.svg)](https://railway.app/template/html2pdf)
+[![Deploy to Fly.io](https://fly.io/static/images/speedrun/app.webp)](https://fly.io/docs/speedrun/)
+
 ## Features ✨
 
 - **Modern Web UI**: Beautiful, intuitive interface with HTML editor, live preview, and job tracking
@@ -514,6 +518,55 @@ CHROMIUM_POOL_SIZE=4  # Browser instances
 memory: 2Gi  # Per worker
 cpu: 2000m   # Per worker
 ```
+
+## Hosting & Deployment 🌐
+
+Ready to deploy? Check out our deployment guides:
+
+### ⚡ Quick Deploy (< 5 minutes)
+
+**One-Click Deployment:**
+- **[Render](https://render.com/deploy)** - Best free tier, auto-deploy from Git
+- **[Railway](https://railway.app)** - Easiest setup, $5/month
+- **[Fly.io](https://fly.io)** - Best value, great free tier
+
+**Simple Command-Line:**
+```bash
+# Railway (3 minutes)
+npm i -g @railway/cli && railway login && railway up
+
+# Fly.io (5 minutes)
+curl -L https://fly.io/install.sh | sh && fly launch
+
+# DigitalOcean (10 minutes)
+ssh root@your-droplet && curl -fsSL https://raw.githubusercontent.com/.../install-do.sh | bash
+```
+
+### 📚 Detailed Guides
+
+- **[Quick Deploy Guide](./docs/QUICK_DEPLOY.md)** - Get started in 5 minutes
+- **[Full Deployment Guide](./docs/DEPLOYMENT.md)** - Comprehensive guide for all platforms
+- **[Platform Configs](.)** - Pre-configured files for each platform
+
+### 💰 Cost Comparison
+
+| Platform | Free Tier | Paid Plan | Best For |
+|----------|-----------|-----------|----------|
+| Fly.io | ✅ 3 VMs | $5-15/mo | Production |
+| Render | ✅ Limited | $7-25/mo | Startups |
+| Railway | ✅ Trial | $5-20/mo | Quick Start |
+| DigitalOcean | ❌ | $12+/mo | Control |
+| AWS ECS | ✅ 12mo | $20+/mo | Enterprise |
+
+### 🔧 DIY VPS Setup
+
+Got a VPS? Deploy with one command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yourusername/Pdfmaker-python/main/scripts/install-do.sh | bash
+```
+
+Includes: Docker, Docker Compose, auto-configuration, SSL setup
 
 ## Testing 🧪
 

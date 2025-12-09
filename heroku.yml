@@ -1,0 +1,21 @@
+# Heroku Configuration for HTML2PDF Service
+# Deploy with: git push heroku main
+
+build:
+  docker:
+    web: Dockerfile
+    worker: Dockerfile
+
+run:
+  web: gunicorn --bind 0.0.0.0:$PORT --workers 4 --timeout 120 app:app
+  worker: celery -A celery_worker.celery_app worker --loglevel=info --concurrency=2
+
+# Notes:
+# 1. Add Heroku Redis addon: heroku addons:create heroku-redis:mini
+# 2. Set config vars:
+#    heroku config:set API_KEY_REQUIRED=true
+#    heroku config:set API_KEYS=your-key-1,your-key-2
+#    heroku config:set SECRET_KEY=$(openssl rand -hex 32)
+# 3. Scale dynos:
+#    heroku ps:scale web=1:basic worker=1:basic
+# 4. View logs: heroku logs --tail

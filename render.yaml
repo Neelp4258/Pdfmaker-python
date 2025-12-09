@@ -1,0 +1,100 @@
+# Render Blueprint for HTML2PDF Service
+# Deploy to Render with one click!
+
+services:
+  # Main API Service
+  - type: web
+    name: html2pdf-api
+    env: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: DEBUG
+        value: false
+      - key: API_KEY_REQUIRED
+        value: true
+      - key: API_KEYS
+        generateValue: true
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: html2pdf-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: html2pdf-redis
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: html2pdf-redis
+          property: connectionString
+      - key: STORAGE_TYPE
+        value: local
+      - key: STORAGE_PATH
+        value: /tmp/html2pdf
+      - key: MAX_UPLOAD_SIZE_MB
+        value: 100
+      - key: RATE_LIMIT_PER_MINUTE
+        value: 60
+      - key: RATE_LIMIT_PER_HOUR
+        value: 1000
+      - key: DEFAULT_FORMAT
+        value: A4
+
+  # Celery Worker Service
+  - type: worker
+    name: html2pdf-worker
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: celery -A celery_worker.celery_app worker --loglevel=info --concurrency=2
+    plan: starter
+    region: oregon
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: DEBUG
+        value: false
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: html2pdf-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: html2pdf-redis
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: html2pdf-redis
+          property: connectionString
+      - key: STORAGE_TYPE
+        value: local
+      - key: STORAGE_PATH
+        value: /tmp/html2pdf
+      - key: CELERY_WORKER_CONCURRENCY
+        value: 2
+
+  # Redis Service
+  - type: redis
+    name: html2pdf-redis
+    plan: starter
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
+
+# Notes:
+# 1. After deployment, update API_KEYS in the Render dashboard
+# 2. Free tier services sleep after 15 minutes of inactivity
+# 3. Upgrade to paid plans for production use
+# 4. Starter plan: $7/month per service
