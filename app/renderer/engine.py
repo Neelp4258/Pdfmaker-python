@@ -27,20 +27,47 @@ class PDFRenderer:
             config: Application configuration object
         """
         self.config = config
-        self.page_size_calc = PageSize(dpi=config.DEFAULT_DPI)
+        # Support both dict-style and attribute-style config access
+        default_dpi = self._get_config('DEFAULT_DPI', 96)
+        sanitize_html = self._get_config('SANITIZE_HTML', True)
+        allow_scripts = self._get_config('ALLOW_INLINE_SCRIPTS', False)
+
+        self.page_size_calc = PageSize(dpi=default_dpi)
         self.sanitizer = HTMLSanitizer(
-            sanitize=config.SANITIZE_HTML,
-            allow_scripts=config.ALLOW_INLINE_SCRIPTS
+            sanitize=sanitize_html,
+            allow_scripts=allow_scripts
         )
         self.browser: Optional[Browser] = None
+
+    def _get_config(self, key: str, default: Any = None) -> Any:
+        """
+        Safely get config value supporting both dict and attribute access.
+
+        Args:
+            key: Config key name
+            default: Default value if key not found
+
+        Returns:
+            Config value
+        """
+        # Try dict-style access first (Flask config)
+        if hasattr(self.config, 'get'):
+            return self.config.get(key, default)
+        # Fall back to attribute access (Config class)
+        return getattr(self.config, key, default)
 
     async def _get_browser(self) -> Browser:
         """Get or create browser instance."""
         if self.browser is None or not self.browser.is_connected():
             playwright = await async_playwright().start()
+            chromium_args = self._get_config('CHROMIUM_ARGS', [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+            ])
             self.browser = await playwright.chromium.launch(
                 headless=True,
-                args=self.config.CHROMIUM_ARGS
+                args=chromium_args
             )
         return self.browser
 
@@ -115,7 +142,7 @@ class PDFRenderer:
         Raises:
             ValueError if URL is not allowed
         """
-        if not self.config.ALLOW_URL_RENDERING:
+        if not self._get_config('ALLOW_URL_RENDERING', True):
             raise ValueError("URL rendering is disabled")
 
         # Extract hostname
@@ -124,13 +151,15 @@ class PDFRenderer:
         hostname = parsed.hostname or parsed.netloc
 
         # Check denylist (SSRF protection)
-        for denied in self.config.URL_DENYLIST:
+        url_denylist = self._get_config('URL_DENYLIST', ['127.0.0.1', 'localhost', '0.0.0.0'])
+        for denied in url_denylist:
             if denied in hostname:
                 raise ValueError(f"URL blocked by denylist: {hostname}")
 
         # Check allowlist if configured
-        if self.config.URL_ALLOWLIST:
-            allowed = any(pattern in hostname for pattern in self.config.URL_ALLOWLIST)
+        url_allowlist = self._get_config('URL_ALLOWLIST', [])
+        if url_allowlist:
+            allowed = any(pattern in hostname for pattern in url_allowlist)
             if not allowed:
                 raise ValueError(f"URL not in allowlist: {hostname}")
 
@@ -210,13 +239,13 @@ class PDFRenderer:
                 context_options['extra_http_headers'] = headers
 
             # Network isolation for security
-            if self.config.NETWORK_ISOLATION and html:
+            if self._get_config('NETWORK_ISOLATION', False) and html:
                 context_options['offline'] = True
 
             context = await browser.new_context(**context_options)
 
             # Disable JavaScript if configured
-            if self.config.DISABLE_JAVASCRIPT:
+            if self._get_config('DISABLE_JAVASCRIPT', False):
                 await context.add_init_script("() => { Object.freeze(Object.prototype); }")
 
             page = await context.new_page()
@@ -233,9 +262,10 @@ class PDFRenderer:
                 page_css += f"\n<style>{css}</style>"
 
             # Load content
+            chromium_timeout = self._get_config('CHROMIUM_TIMEOUT', 30000)
             if html:
                 # Sanitize HTML if configured
-                if self.config.SANITIZE_HTML:
+                if self._get_config('SANITIZE_HTML', True):
                     html = self.sanitizer.sanitize(html)
 
                 # Inject CSS into HTML
@@ -244,9 +274,9 @@ class PDFRenderer:
                 else:
                     html = f'{page_css}{html}'
 
-                await page.set_content(html, wait_until='networkidle', timeout=self.config.CHROMIUM_TIMEOUT)
+                await page.set_content(html, wait_until='networkidle', timeout=chromium_timeout)
             else:
-                await page.goto(url, wait_until='networkidle', timeout=self.config.CHROMIUM_TIMEOUT)
+                await page.goto(url, wait_until='networkidle', timeout=chromium_timeout)
 
                 # Inject CSS for URL rendering
                 await page.add_style_tag(content=page_css)
@@ -258,7 +288,7 @@ class PDFRenderer:
                 if wait_for.isdigit():
                     await asyncio.sleep(int(wait_for) / 1000)
                 else:
-                    await page.wait_for_selector(wait_for, timeout=self.config.CHROMIUM_TIMEOUT)
+                    await page.wait_for_selector(wait_for, timeout=chromium_timeout)
 
             # Prepare PDF options
             pdf_options = {
