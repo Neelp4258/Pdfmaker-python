@@ -1,63 +1,17 @@
 # Multi-stage Dockerfile for HTML2PDF service with Playwright and Chromium
-# Optimized to fix Playwright installation issues
+# Simplified approach using Playwright's built-in dependency management
 
-# Stage 1: Base image with Python and ALL system dependencies
+# Stage 1: Base image with minimal system dependencies
 FROM python:3.11-slim as base
 
 # Set environment to avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install ALL system dependencies in one go
+# Install minimal essential utilities
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Essential build tools
-    build-essential \
-    # Basic utilities
     wget \
     curl \
-    gnupg \
     ca-certificates \
-    git \
-    # Chromium/Playwright dependencies (COMPLETE LIST)
-    libnss3 \
-    libnspr4 \
-    libatk1.0-0 \
-    libatk-bridge2.0-0 \
-    libcups2 \
-    libdrm2 \
-    libdbus-1-3 \
-    libxkbcommon0 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxfixes3 \
-    libxrandr2 \
-    libgbm1 \
-    libpango-1.0-0 \
-    libcairo2 \
-    libasound2 \
-    libatspi2.0-0 \
-    libxshmfence1 \
-    libglib2.0-0 \
-    libgtk-3-0 \
-    libx11-6 \
-    libx11-xcb1 \
-    libxcb1 \
-    libxcomposite1 \
-    libxcursor1 \
-    libxdamage1 \
-    libxi6 \
-    libxtst6 \
-    libxext6 \
-    # Additional libraries that might be missing
-    libgconf-2-4 \
-    libnss3-dev \
-    libxss1 \
-    # Fonts for better rendering
-    fonts-liberation \
-    fonts-noto-color-emoji \
-    fonts-noto-cjk \
-    fontconfig \
-    # Clean up to reduce image size
-    && fc-cache -f \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -73,17 +27,12 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt
 
-# IMPORTANT: Install Playwright system dependencies FIRST
-# This installs OS-level dependencies that Playwright needs
-RUN playwright install-deps chromium
-
-# Then install Playwright browsers with retry logic
-# Set environment to ensure proper installation
+# Set Playwright environment
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-RUN python -m playwright install chromium --with-deps || \
-    (echo "First attempt failed, retrying..." && sleep 5 && python -m playwright install chromium --with-deps) || \
-    (echo "Second attempt failed, trying without --with-deps..." && python -m playwright install chromium)
+# Install Playwright with all system dependencies using Playwright's installer
+# This automatically handles all required system packages
+RUN playwright install --with-deps chromium
 
 # Verify installation
 RUN python -c "from playwright.sync_api import sync_playwright; print('Playwright installed successfully')"
