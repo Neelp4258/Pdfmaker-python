@@ -30,9 +30,38 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 # Set Playwright environment
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-# Install Playwright with all system dependencies using Playwright's installer
-# This automatically handles all required system packages
-RUN playwright install --with-deps chromium
+# Install system dependencies required for Chromium manually
+# This avoids issues with unavailable font packages from --with-deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Core libraries for Chromium
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libdbus-1-3 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libasound2 \
+    libatspi2.0-0 \
+    libxshmfence1 \
+    # Fonts - using available packages only
+    fonts-liberation \
+    fonts-noto-color-emoji \
+    fonts-noto-cjk \
+    # Additional utilities
+    xvfb \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Playwright browsers without system dependencies (already installed above)
+RUN playwright install chromium
 
 # Verify installation
 RUN python -c "from playwright.sync_api import sync_playwright; print('Playwright installed successfully')"
