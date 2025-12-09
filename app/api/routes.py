@@ -5,7 +5,7 @@ Provides sync and async PDF rendering endpoints with comprehensive parameter sup
 import logging
 import uuid
 import asyncio
-from flask import Blueprint, request, jsonify, send_file, current_app
+from flask import Blueprint, request, jsonify, send_file, current_app, render_template
 from werkzeug.exceptions import BadRequest
 from app.middleware.auth import require_api_key
 from app.middleware.rate_limiter import rate_limit
@@ -19,6 +19,18 @@ import io
 logger = logging.getLogger(__name__)
 
 api_bp = Blueprint('api', __name__)
+
+
+@api_bp.route('/')
+def index():
+    """Serve the web UI."""
+    return render_template('index.html')
+
+
+@api_bp.route('/docs')
+def docs():
+    """Serve the API documentation."""
+    return render_template('docs.html')
 
 
 def parse_render_params(data: dict) -> dict:

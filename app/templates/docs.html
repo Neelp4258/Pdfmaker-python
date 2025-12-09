@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML2PDF - API Documentation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .docs-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .docs-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        .docs-content {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
+        }
+        .endpoint {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        .method {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            margin-right: 0.75rem;
+        }
+        .method-post { background: #10b981; color: white; }
+        .method-get { background: #3b82f6; color: white; }
+        code {
+            background: var(--bg-tertiary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.875rem;
+        }
+        pre {
+            background: var(--bg-tertiary);
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            overflow-x: auto;
+        }
+        pre code {
+            background: none;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="docs-container">
+        <div class="docs-header">
+            <h1><i class="fas fa-book"></i> API Documentation</h1>
+            <p>Complete reference for the HTML2PDF API</p>
+            <a href="/" class="btn btn-primary" style="margin-top: 1rem;">
+                <i class="fas fa-arrow-left"></i> Back to App
+            </a>
+        </div>
+
+        <div class="docs-content">
+            <h2>Authentication</h2>
+            <p>All API requests require an API key. Include it in your requests:</p>
+            <pre><code>Header: X-API-Key: your-api-key
+Query: ?api_key=your-api-key</code></pre>
+
+            <h2>Endpoints</h2>
+
+            <div class="endpoint">
+                <h3>
+                    <span class="method method-post">POST</span>
+                    /render-sync
+                </h3>
+                <p>Generate PDF synchronously (immediate response)</p>
+                <h4>Request Body:</h4>
+                <pre><code>{
+  "html": "&lt;html&gt;...&lt;/html&gt;",  // OR "url": "https://..."
+  "format": "A4",                    // A4, Letter, Legal, etc.
+  "width": "210mm",                  // Custom width (optional)
+  "height": "297mm",                 // Custom height (optional)
+  "aspect": "16:9",                  // Aspect ratio (optional)
+  "landscape": false,                // Orientation
+  "margin": "10mm",                  // Margins
+  "scale": 1.0,                      // Scale factor (0.1-2.0)
+  "page_ranges": "1-5, 8",           // Specific pages
+  "css": "body { color: red; }",     // Custom CSS
+  "wait_for": "#content"             // Wait selector or timeout
+}</code></pre>
+                <h4>Response:</h4>
+                <p>PDF file (application/pdf)</p>
+            </div>
+
+            <div class="endpoint">
+                <h3>
+                    <span class="method method-post">POST</span>
+                    /render
+                </h3>
+                <p>Queue PDF generation job (asynchronous)</p>
+                <h4>Request Body:</h4>
+                <p>Same as /render-sync</p>
+                <h4>Response:</h4>
+                <pre><code>{
+  "job_id": "uuid",
+  "status": "queued",
+  "status_url": "/status/uuid"
+}</code></pre>
+            </div>
+
+            <div class="endpoint">
+                <h3>
+                    <span class="method method-get">GET</span>
+                    /status/&lt;job_id&gt;
+                </h3>
+                <p>Get job status</p>
+                <h4>Response:</h4>
+                <pre><code>{
+  "job_id": "uuid",
+  "status": "completed",  // queued, running, completed, failed
+  "download_url": "/download/uuid",
+  "size_bytes": 12345
+}</code></pre>
+            </div>
+
+            <div class="endpoint">
+                <h3>
+                    <span class="method method-get">GET</span>
+                    /download/&lt;job_id&gt;
+                </h3>
+                <p>Download generated PDF</p>
+                <h4>Response:</h4>
+                <p>PDF file (application/pdf)</p>
+            </div>
+
+            <div class="endpoint">
+                <h3>
+                    <span class="method method-post">POST</span>
+                    /batch
+                </h3>
+                <p>Queue multiple PDF generation jobs</p>
+                <h4>Request Body:</h4>
+                <pre><code>{
+  "jobs": [
+    {"html": "...", "format": "A4"},
+    {"url": "...", "format": "Letter"}
+  ]
+}</code></pre>
+                <h4>Response:</h4>
+                <pre><code>{
+  "jobs": [
+    {"job_id": "uuid1", "status": "queued"},
+    {"job_id": "uuid2", "status": "queued"}
+  ]
+}</code></pre>
+            </div>
+
+            <h2>Page Formats</h2>
+            <ul>
+                <li><strong>A4:</strong> 210 × 297 mm</li>
+                <li><strong>A3:</strong> 297 × 420 mm</li>
+                <li><strong>A5:</strong> 148 × 210 mm</li>
+                <li><strong>Letter:</strong> 8.5 × 11 in</li>
+                <li><strong>Legal:</strong> 8.5 × 14 in</li>
+                <li><strong>Tabloid:</strong> 11 × 17 in</li>
+                <li><strong>Receipt:</strong> 80mm wide</li>
+                <li><strong>Custom:</strong> Specify width and height</li>
+            </ul>
+
+            <h2>Aspect Ratios</h2>
+            <ul>
+                <li><strong>16:9</strong> - Widescreen</li>
+                <li><strong>16:10</strong> - Widescreen alternative</li>
+                <li><strong>4:3</strong> - Standard</li>
+                <li><strong>3:2</strong> - Photo</li>
+                <li><strong>1:1</strong> - Square</li>
+            </ul>
+
+            <h2>Dimension Units</h2>
+            <ul>
+                <li><strong>mm</strong> - Millimeters (e.g., "210mm")</li>
+                <li><strong>cm</strong> - Centimeters (e.g., "21cm")</li>
+                <li><strong>in</strong> - Inches (e.g., "8.5in")</li>
+                <li><strong>px</strong> - Pixels at 96 DPI (e.g., "800px")</li>
+                <li><strong>pt</strong> - Points (e.g., "72pt")</li>
+            </ul>
+
+            <h2>Examples</h2>
+
+            <h3>cURL</h3>
+            <pre><code>curl -X POST http://localhost:5000/render-sync \
+  -H "X-API-Key: your-key" \
+  -H "Content-Type: application/json" \
+  -d '{"html": "&lt;h1&gt;Hello&lt;/h1&gt;", "format": "A4"}' \
+  --output document.pdf</code></pre>
+
+            <h3>Python</h3>
+            <pre><code>import requests
+
+response = requests.post(
+    'http://localhost:5000/render-sync',
+    headers={'X-API-Key': 'your-key'},
+    json={'html': '&lt;h1&gt;Hello&lt;/h1&gt;', 'format': 'A4'}
+)
+
+with open('document.pdf', 'wb') as f:
+    f.write(response.content)</code></pre>
+
+            <h3>JavaScript</h3>
+            <pre><code>const response = await fetch('http://localhost:5000/render-sync', {
+  method: 'POST',
+  headers: {
+    'X-API-Key': 'your-key',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    html: '&lt;h1&gt;Hello&lt;/h1&gt;',
+    format: 'A4'
+  })
+});
+
+const blob = await response.blob();
+// Download or use the PDF blob</code></pre>
+
+            <h2>Rate Limits</h2>
+            <p>Default rate limits:</p>
+            <ul>
+                <li>60 requests per minute</li>
+                <li>1000 requests per hour</li>
+            </ul>
+            <p>Rate limit headers are included in responses:</p>
+            <pre><code>X-RateLimit-Minute-Limit: 60
+X-RateLimit-Minute-Remaining: 45
+X-RateLimit-Hour-Limit: 1000
+X-RateLimit-Hour-Remaining: 950</code></pre>
+
+            <h2>Error Responses</h2>
+            <pre><code>{
+  "error": "Error type",
+  "message": "Detailed error message"
+}</code></pre>
+
+            <h3>Status Codes</h3>
+            <ul>
+                <li><strong>200:</strong> Success</li>
+                <li><strong>202:</strong> Accepted (async job queued)</li>
+                <li><strong>400:</strong> Bad request</li>
+                <li><strong>401:</strong> Unauthorized (missing API key)</li>
+                <li><strong>403:</strong> Forbidden (invalid API key)</li>
+                <li><strong>404:</strong> Not found</li>
+                <li><strong>413:</strong> Request too large</li>
+                <li><strong>429:</strong> Rate limit exceeded</li>
+                <li><strong>500:</strong> Internal server error</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Dark mode support
+        const isDark = localStorage.getItem('html2pdf_dark_mode') === 'true';
+        if (isDark) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
+</body>
+</html>

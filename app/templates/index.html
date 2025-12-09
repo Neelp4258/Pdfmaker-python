@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML2PDF - Convert HTML to PDF</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container" id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-file-pdf"></i>
+                    <h1>HTML2PDF</h1>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-icon" id="darkModeToggle" title="Toggle Dark Mode">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button class="btn btn-icon" onclick="window.open('/docs', '_blank')" title="API Docs">
+                        <i class="fas fa-book"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar with Options -->
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-cog"></i> PDF Settings</h3>
+
+                    <!-- Input Mode -->
+                    <div class="form-group">
+                        <label>Input Mode</label>
+                        <div class="btn-group">
+                            <button class="btn btn-sm active" data-mode="html" onclick="switchInputMode('html')">
+                                <i class="fas fa-code"></i> HTML
+                            </button>
+                            <button class="btn btn-sm" data-mode="url" onclick="switchInputMode('url')">
+                                <i class="fas fa-link"></i> URL
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Page Format -->
+                    <div class="form-group">
+                        <label for="format">Page Format</label>
+                        <select id="format" class="form-control">
+                            <option value="A4" selected>A4 (210 × 297 mm)</option>
+                            <option value="A3">A3 (297 × 420 mm)</option>
+                            <option value="A5">A5 (148 × 210 mm)</option>
+                            <option value="LETTER">Letter (8.5 × 11 in)</option>
+                            <option value="LEGAL">Legal (8.5 × 14 in)</option>
+                            <option value="TABLOID">Tabloid (11 × 17 in)</option>
+                            <option value="RECEIPT">Receipt (80mm wide)</option>
+                            <option value="custom">Custom Size</option>
+                            <option value="aspect">Aspect Ratio</option>
+                        </select>
+                    </div>
+
+                    <!-- Custom Dimensions -->
+                    <div class="form-group custom-size" style="display: none;">
+                        <label>Custom Dimensions</label>
+                        <div class="input-group">
+                            <input type="text" id="customWidth" class="form-control" placeholder="210mm" value="210mm">
+                            <span class="input-separator">×</span>
+                            <input type="text" id="customHeight" class="form-control" placeholder="297mm" value="297mm">
+                        </div>
+                        <small>Units: mm, in, px, cm</small>
+                    </div>
+
+                    <!-- Aspect Ratio -->
+                    <div class="form-group aspect-ratio" style="display: none;">
+                        <label for="aspect">Aspect Ratio</label>
+                        <select id="aspect" class="form-control">
+                            <option value="16:9">16:9 (Widescreen)</option>
+                            <option value="16:10">16:10</option>
+                            <option value="4:3">4:3 (Standard)</option>
+                            <option value="3:2">3:2</option>
+                            <option value="1:1">1:1 (Square)</option>
+                        </select>
+                    </div>
+
+                    <!-- Orientation -->
+                    <div class="form-group">
+                        <label>Orientation</label>
+                        <div class="btn-group">
+                            <button class="btn btn-sm active" data-orientation="portrait" onclick="setOrientation('portrait')">
+                                <i class="fas fa-mobile-alt"></i> Portrait
+                            </button>
+                            <button class="btn btn-sm" data-orientation="landscape" onclick="setOrientation('landscape')">
+                                <i class="fas fa-desktop"></i> Landscape
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Margins -->
+                    <div class="form-group">
+                        <label for="margin">Margins</label>
+                        <input type="text" id="margin" class="form-control" placeholder="10mm" value="10mm">
+                        <small>Single value or top,right,bottom,left</small>
+                    </div>
+
+                    <!-- Scale -->
+                    <div class="form-group">
+                        <label for="scale">Scale: <span id="scaleValue">1.0</span></label>
+                        <input type="range" id="scale" class="form-range" min="0.1" max="2.0" step="0.1" value="1.0">
+                    </div>
+                </div>
+
+                <!-- Advanced Options -->
+                <div class="sidebar-section">
+                    <h3>
+                        <i class="fas fa-sliders-h"></i> Advanced Options
+                        <button class="btn btn-icon btn-xs" onclick="toggleSection('advanced')">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </h3>
+                    <div id="advanced" class="collapsible">
+                        <div class="form-group">
+                            <label for="pageRanges">Page Ranges</label>
+                            <input type="text" id="pageRanges" class="form-control" placeholder="1-5, 8, 11-13">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="waitFor">Wait For</label>
+                            <input type="text" id="waitFor" class="form-control" placeholder="#content or 5000">
+                            <small>Selector or timeout in ms</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="syncMode" checked>
+                                Synchronous Mode
+                            </label>
+                            <small>Immediate response (for small jobs)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="sidebar-actions">
+                    <button class="btn btn-primary btn-block" onclick="generatePDF()">
+                        <i class="fas fa-file-pdf"></i> Generate PDF
+                    </button>
+                    <button class="btn btn-secondary btn-block" onclick="resetForm()">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Editor Area -->
+            <main class="editor-area">
+                <!-- HTML Editor -->
+                <div class="editor-container" id="htmlEditor">
+                    <div class="editor-header">
+                        <h3><i class="fas fa-code"></i> HTML Editor</h3>
+                        <div class="editor-actions">
+                            <button class="btn btn-sm" onclick="loadTemplate()">
+                                <i class="fas fa-file-import"></i> Load Template
+                            </button>
+                            <button class="btn btn-sm" onclick="uploadFile()">
+                                <i class="fas fa-upload"></i> Upload HTML
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="htmlCode"></textarea>
+                </div>
+
+                <!-- URL Input -->
+                <div class="url-input-container" id="urlInput" style="display: none;">
+                    <div class="url-input-card">
+                        <h3><i class="fas fa-link"></i> Enter URL</h3>
+                        <input type="text" id="urlField" class="form-control form-control-lg" placeholder="https://example.com">
+                        <p class="help-text">Enter the URL of the webpage you want to convert to PDF</p>
+                    </div>
+                </div>
+
+                <!-- CSS Editor -->
+                <div class="css-editor" id="cssEditor">
+                    <div class="editor-header">
+                        <h3>
+                            <i class="fas fa-paint-brush"></i> Custom CSS
+                            <button class="btn btn-icon btn-xs" onclick="toggleSection('cssEditorContent')">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </h3>
+                    </div>
+                    <div id="cssEditorContent" class="collapsible" style="display: none;">
+                        <textarea id="cssCode"></textarea>
+                    </div>
+                </div>
+
+                <!-- Status Panel -->
+                <div class="status-panel" id="statusPanel" style="display: none;">
+                    <div class="status-content">
+                        <div class="spinner"></div>
+                        <h3 id="statusTitle">Processing...</h3>
+                        <p id="statusMessage">Generating your PDF</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressBar"></div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Job History -->
+        <div class="job-history" id="jobHistory" style="display: none;">
+            <div class="job-history-header">
+                <h3><i class="fas fa-history"></i> Recent Jobs</h3>
+                <button class="btn btn-sm" onclick="clearHistory()">
+                    <i class="fas fa-trash"></i> Clear
+                </button>
+            </div>
+            <div class="job-list" id="jobList"></div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div class="toast-container" id="toastContainer"></div>
+
+        <!-- File Upload Input (Hidden) -->
+        <input type="file" id="fileInput" accept=".html,.htm" style="display: none;">
+    </div>
+
+    <!-- Templates Modal -->
+    <div class="modal" id="templateModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Choose Template</h3>
+                <button class="btn btn-icon" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="template-grid">
+                    <div class="template-card" onclick="selectTemplate('invoice')">
+                        <i class="fas fa-file-invoice"></i>
+                        <h4>Invoice</h4>
+                    </div>
+                    <div class="template-card" onclick="selectTemplate('report')">
+                        <i class="fas fa-chart-bar"></i>
+                        <h4>Report</h4>
+                    </div>
+                    <div class="template-card" onclick="selectTemplate('resume')">
+                        <i class="fas fa-file-alt"></i>
+                        <h4>Resume</h4>
+                    </div>
+                    <div class="template-card" onclick="selectTemplate('presentation')">
+                        <i class="fas fa-presentation"></i>
+                        <h4>Presentation</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

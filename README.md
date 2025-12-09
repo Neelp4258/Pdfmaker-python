@@ -4,6 +4,7 @@ Production-ready Python Flask service for converting HTML/URLs to pixel-perfect 
 
 ## Features ✨
 
+- **Modern Web UI**: Beautiful, intuitive interface with HTML editor, live preview, and job tracking
 - **Pixel-Perfect Rendering**: Uses Playwright with headless Chromium for accurate PDF generation
 - **Flexible Page Sizing**: Named formats (A4, Letter, etc.), custom dimensions, and aspect ratios
 - **Async Job Processing**: Celery + Redis for handling large/long-running conversions
@@ -37,7 +38,11 @@ docker-compose up -d
 curl http://localhost:5000/health
 ```
 
-The service will be available at `http://localhost:5000` and Celery monitoring at `http://localhost:5555`.
+The service will be available at:
+- **Web UI**: `http://localhost:5000` - Beautiful interface for creating PDFs
+- **API**: `http://localhost:5000` - REST API endpoints
+- **API Docs**: `http://localhost:5000/docs` - Interactive API documentation
+- **Celery Monitor**: `http://localhost:5555` - Flower monitoring dashboard
 
 ### Local Development
 
@@ -57,6 +62,38 @@ python app.py
 # In another terminal, start Celery worker
 celery -A celery_worker.celery_app worker --loglevel=info
 ```
+
+## Web Interface 🎨
+
+The service includes a modern, feature-rich web interface:
+
+### Features
+- **CodeMirror Editor**: Syntax-highlighted HTML/CSS editing
+- **Live Configuration**: Visual controls for all PDF options
+- **Templates**: Pre-built templates for invoices, reports, resumes, presentations
+- **Job History**: Track and download recent PDFs
+- **Dark Mode**: Comfortable viewing in any environment
+- **File Upload**: Import HTML files directly
+- **Real-time Status**: Live job progress tracking
+- **Responsive Design**: Works on desktop, tablet, and mobile
+
+### Using the Web UI
+
+1. **Open** `http://localhost:5000` in your browser
+2. **Choose Input Mode**: HTML editor or URL input
+3. **Configure Options**: Select format, orientation, margins, etc.
+4. **Edit HTML**: Use the built-in editor or load a template
+5. **Add Custom CSS**: Optional styling in the CSS panel
+6. **Generate PDF**: Click "Generate PDF" button
+7. **Download**: PDF downloads automatically or from job history
+
+### Templates
+
+Built-in templates for common use cases:
+- **Invoice**: Professional invoice layout
+- **Report**: Multi-page report with cover page
+- **Resume**: Clean CV/resume design
+- **Presentation**: 16:9 slide format
 
 ## API Documentation 📚
 
