@@ -7,6 +7,9 @@ FROM python:3.11-slim as base
 # Set environment to avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Pre-accept Microsoft Core Fonts EULA
+RUN echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | debconf-set-selections
+
 # Install ALL system dependencies in one go
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Essential build tools
