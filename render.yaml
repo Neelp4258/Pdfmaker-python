@@ -49,6 +49,8 @@ services:
         value: 1000
       - key: DEFAULT_FORMAT
         value: A4
+      - key: DEFAULT_DPI
+        value: 96
 
   # Celery Worker Service
   - type: worker
