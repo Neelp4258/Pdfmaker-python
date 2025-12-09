@@ -1,0 +1,45 @@
+# Dockerfile optimized for ARM64 (Apple Silicon, Raspberry Pi, etc.)
+# Use this if you're on M1/M2 Mac or ARM-based systems
+
+FROM python:3.11-slim
+
+# Set environment
+ENV DEBIAN_FRONTEND=noninteractive \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget curl gnupg ca-certificates \
+    # Chromium dependencies for ARM
+    chromium \
+    chromium-driver \
+    # Additional libraries
+    libnss3 libxss1 libasound2 libatk-bridge2.0-0 \
+    libgtk-3-0 libgbm1 libxshmfence1 \
+    # Fonts
+    fonts-liberation fonts-noto-color-emoji \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Install Playwright - for ARM, we'll use system Chromium
+RUN playwright install-deps || true
+
+# Copy application
+COPY . .
+
+# Create directories
+RUN mkdir -p /tmp/html2pdf /app/data/pdfs && \
+    chmod 777 /tmp/html2pdf /app/data/pdfs
+
+EXPOSE 5000
+
+# Use system Chromium for ARM
+ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
+
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--timeout", "120", "app:app"]
