@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: html2pdf-worker
+  namespace: html2pdf
+  labels:
+    app: html2pdf-worker
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: html2pdf-worker
+  template:
+    metadata:
+      labels:
+        app: html2pdf-worker
+    spec:
+      containers:
+        - name: worker
+          image: html2pdf:latest  # Replace with your image
+          imagePullPolicy: Always
+          command:
+            - celery
+            - -A
+            - celery_worker.celery_app
+            - worker
+            - --loglevel=info
+            - --concurrency=4
+            - --max-tasks-per-child=50
+          envFrom:
+            - configMapRef:
+                name: html2pdf-config
+            - secretRef:
+                name: html2pdf-secret
+          volumeMounts:
+            - name: pdf-storage
+              mountPath: /app/data/pdfs
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "1000m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
+          # Memory limit for Chromium instances
+          env:
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=2048"
+      volumes:
+        - name: pdf-storage
+          persistentVolumeClaim:
+            claimName: pdf-storage-pvc
+
+---
+# Horizontal Pod Autoscaler for workers
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: html2pdf-worker-hpa
+  namespace: html2pdf
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: html2pdf-worker
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80

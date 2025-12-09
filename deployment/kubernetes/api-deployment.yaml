@@ -1,0 +1,92 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: html2pdf-api
+  namespace: html2pdf
+  labels:
+    app: html2pdf-api
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 5000
+      protocol: TCP
+      name: http
+  selector:
+    app: html2pdf-api
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: html2pdf-api
+  namespace: html2pdf
+  labels:
+    app: html2pdf-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: html2pdf-api
+  template:
+    metadata:
+      labels:
+        app: html2pdf-api
+    spec:
+      containers:
+        - name: api
+          image: html2pdf:latest  # Replace with your image
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+              name: http
+          envFrom:
+            - configMapRef:
+                name: html2pdf-config
+            - secretRef:
+                name: html2pdf-secret
+          volumeMounts:
+            - name: pdf-storage
+              mountPath: /app/data/pdfs
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: pdf-storage
+          persistentVolumeClaim:
+            claimName: pdf-storage-pvc
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pdf-storage-pvc
+  namespace: html2pdf
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+  # storageClassName: standard  # Adjust based on your cluster

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: html2pdf
+  labels:
+    name: html2pdf
+    app: html2pdf-service
