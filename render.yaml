@@ -51,6 +51,10 @@ services:
         value: A4
       - key: DEFAULT_DPI
         value: 96
+      - key: GENERATION_PASSWORD_REQUIRED
+        value: true
+      - key: GENERATION_PASSWORD
+        value: Bhavani@102005
 
   # Celery Worker Service
   - type: worker
