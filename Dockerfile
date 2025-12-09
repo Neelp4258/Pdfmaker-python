@@ -59,8 +59,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fontconfig \
     # Clean up to reduce image size
     && fc-cache -f \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
