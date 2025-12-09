@@ -28,7 +28,7 @@ class HTMLSanitizer:
             sanitize: Whether to sanitize HTML
             allow_scripts: Whether to allow script tags
         """
-        self.sanitize = sanitize
+        self.enabled = sanitize
         self.allow_scripts = allow_scripts
 
         if allow_scripts:
@@ -44,7 +44,7 @@ class HTMLSanitizer:
         Returns:
             Sanitized HTML string
         """
-        if not self.sanitize:
+        if not self.enabled:
             return html
 
         # Remove dangerous tags
