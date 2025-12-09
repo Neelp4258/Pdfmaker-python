@@ -180,7 +180,9 @@ def render_pdf_sync_endpoint():
 
         # Render PDF with timeout
         try:
+            logger.info("Starting PDF rendering...")
             pdf_bytes = render_pdf_sync(**render_params)
+            logger.info(f"PDF rendering completed, received {len(pdf_bytes)} bytes")
         except Exception as e:
             logger.error(f"Rendering failed: {e}", exc_info=True)
             return jsonify({
@@ -189,11 +191,13 @@ def render_pdf_sync_endpoint():
             }), 500
 
         # Return PDF as response
+        logger.debug("Creating BytesIO object for PDF response")
         pdf_io = io.BytesIO(pdf_bytes)
         pdf_io.seek(0)
 
         # Generate filename
         filename = f"document-{uuid.uuid4().hex[:8]}.pdf"
+        logger.info(f"Sending PDF file: {filename} ({len(pdf_bytes)} bytes)")
 
         return send_file(
             pdf_io,
