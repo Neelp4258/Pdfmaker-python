@@ -59,16 +59,26 @@ class PDFRenderer:
     async def _get_browser(self) -> Browser:
         """Get or create browser instance."""
         if self.browser is None or not self.browser.is_connected():
-            playwright = await async_playwright().start()
-            chromium_args = self._get_config('CHROMIUM_ARGS', [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-            ])
-            self.browser = await playwright.chromium.launch(
-                headless=True,
-                args=chromium_args
-            )
+            logger.info("Starting Playwright and launching Chromium browser...")
+            try:
+                playwright = await async_playwright().start()
+                logger.debug("Playwright started successfully")
+
+                chromium_args = self._get_config('CHROMIUM_ARGS', [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                ])
+                logger.debug(f"Launching browser with args: {chromium_args}")
+
+                self.browser = await playwright.chromium.launch(
+                    headless=True,
+                    args=chromium_args
+                )
+                logger.info("Chromium browser launched successfully")
+            except Exception as e:
+                logger.error(f"Failed to start browser: {e}", exc_info=True)
+                raise RuntimeError(f"Failed to initialize browser: {str(e)}") from e
         return self.browser
 
     async def close(self):
@@ -231,7 +241,10 @@ class PDFRenderer:
         logger.info(f"Rendering PDF: {dimensions['width_mm']}x{dimensions['height_mm']}mm, scale={scale}")
 
         try:
+            logger.debug("Getting browser instance...")
             browser = await self._get_browser()
+            logger.debug("Browser instance obtained")
+
             context_options = {}
 
             # Set custom headers if provided
@@ -242,13 +255,17 @@ class PDFRenderer:
             if self._get_config('NETWORK_ISOLATION', False) and html:
                 context_options['offline'] = True
 
+            logger.debug("Creating browser context...")
             context = await browser.new_context(**context_options)
+            logger.debug("Browser context created")
 
             # Disable JavaScript if configured
             if self._get_config('DISABLE_JAVASCRIPT', False):
                 await context.add_init_script("() => { Object.freeze(Object.prototype); }")
 
+            logger.debug("Creating new page...")
             page = await context.new_page()
+            logger.debug("New page created")
 
             # Set viewport to match page dimensions
             await page.set_viewport_size({
@@ -264,8 +281,10 @@ class PDFRenderer:
             # Load content
             chromium_timeout = self._get_config('CHROMIUM_TIMEOUT', 30000)
             if html:
+                logger.debug("Loading HTML content...")
                 # Sanitize HTML if configured
                 if self._get_config('SANITIZE_HTML', True):
+                    logger.debug("Sanitizing HTML...")
                     html = self.sanitizer.sanitize(html)
 
                 # Inject CSS into HTML
@@ -274,9 +293,14 @@ class PDFRenderer:
                 else:
                     html = f'{page_css}{html}'
 
-                await page.set_content(html, wait_until='networkidle', timeout=chromium_timeout)
+                logger.debug(f"Setting page content (timeout: {chromium_timeout}ms)...")
+                # Use 'domcontentloaded' instead of 'networkidle' to prevent hanging
+                await page.set_content(html, wait_until='domcontentloaded', timeout=chromium_timeout)
+                logger.debug("Page content set successfully")
             else:
-                await page.goto(url, wait_until='networkidle', timeout=chromium_timeout)
+                logger.debug(f"Navigating to URL: {url}")
+                await page.goto(url, wait_until='domcontentloaded', timeout=chromium_timeout)
+                logger.debug("URL navigation complete")
 
                 # Inject CSS for URL rendering
                 await page.add_style_tag(content=page_css)
@@ -285,10 +309,12 @@ class PDFRenderer:
 
             # Wait for specific selector or timeout
             if wait_for:
+                logger.debug(f"Waiting for: {wait_for}")
                 if wait_for.isdigit():
                     await asyncio.sleep(int(wait_for) / 1000)
                 else:
                     await page.wait_for_selector(wait_for, timeout=chromium_timeout)
+                logger.debug("Wait condition met")
 
             # Prepare PDF options
             pdf_options = {
@@ -304,9 +330,14 @@ class PDFRenderer:
                 pdf_options['page_ranges'] = page_ranges
 
             # Generate PDF
+            logger.debug("Generating PDF from page...")
+            logger.debug(f"PDF options: {pdf_options}")
             pdf_bytes = await page.pdf(**pdf_options)
+            logger.debug(f"PDF bytes generated: {len(pdf_bytes)} bytes")
 
+            logger.debug("Closing browser context...")
             await context.close()
+            logger.debug("Browser context closed")
 
             logger.info(f"PDF generated successfully: {len(pdf_bytes)} bytes")
             return pdf_bytes
