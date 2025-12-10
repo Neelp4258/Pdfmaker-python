@@ -227,14 +227,8 @@ async function generatePDF() {
         logToConsole(`Generating PDF with: format=${options.format || 'none'}, aspect=${options.aspect || 'none'}, ` +
                      `width=${options.width || 'none'}, height=${options.height || 'none'}, landscape=${options.landscape}`, 'info');
 
-        // Check sync mode
-        const isSyncMode = document.getElementById('syncMode').checked;
-
-        if (isSyncMode) {
-            await generatePDFSync(options);
-        } else {
-            await generatePDFAsync(options);
-        }
+        // Always use synchronous mode (async mode requires Redis/Celery services)
+        await generatePDFSync(options);
 
     } catch (error) {
         console.error('Error generating PDF:', error);
