@@ -33,6 +33,29 @@ def create_app(config_name=None):
     # Health check endpoint
     @app.route('/health')
     def health():
-        return {'status': 'healthy', 'service': 'html2pdf'}, 200
+        health_status = {
+            'status': 'healthy',
+            'service': 'html2pdf',
+            'celery': 'unknown',
+            'redis': 'unknown'
+        }
+
+        # Check Redis/Celery availability
+        try:
+            from app.tasks import celery_app
+            # Try to inspect Celery
+            inspect = celery_app.control.inspect(timeout=1.0)
+            if inspect and inspect.ping():
+                health_status['celery'] = 'available'
+                health_status['redis'] = 'connected'
+            else:
+                health_status['celery'] = 'no workers'
+                health_status['redis'] = 'connected'
+        except Exception as e:
+            health_status['celery'] = 'unavailable'
+            health_status['redis'] = 'disconnected'
+            health_status['async_mode'] = 'disabled'
+
+        return health_status, 200
 
     return app
