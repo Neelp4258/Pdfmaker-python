@@ -144,16 +144,24 @@ def render_pdf_async():
         # Parse and validate parameters
         render_params = parse_render_params(data)
 
+        # Remove password from params before queueing (already validated)
+        render_params.pop('password', None)
+
         # Generate job ID
         job_id = str(uuid.uuid4())
 
         logger.info(f"Queueing PDF render job {job_id}")
 
         # Queue async task
-        task = render_pdf_task.apply_async(
-            args=[job_id, render_params],
-            task_id=job_id
-        )
+        try:
+            task = render_pdf_task.apply_async(
+                args=[job_id, render_params],
+                task_id=job_id
+            )
+            logger.info(f"Task queued successfully: {task.id}")
+        except Exception as celery_error:
+            logger.error(f"Failed to queue Celery task: {celery_error}", exc_info=True)
+            raise RuntimeError(f"Failed to queue render job: {str(celery_error)}")
 
         return jsonify({
             'job_id': job_id,
@@ -165,9 +173,12 @@ def render_pdf_async():
     except BadRequest as e:
         logger.warning(f"Bad request: {e}")
         return jsonify({'error': 'Bad request', 'message': str(e)}), 400
+    except RuntimeError as e:
+        logger.error(f"Runtime error: {e}")
+        return jsonify({'error': 'Service error', 'message': str(e)}), 503
     except Exception as e:
         logger.error(f"Error queueing render job: {e}", exc_info=True)
-        return jsonify({'error': 'Internal error', 'message': 'Failed to queue render job'}), 500
+        return jsonify({'error': 'Internal error', 'message': 'Failed to queue render job. Celery/Redis may not be running.'}), 500
 
 
 @api_bp.route('/render-sync', methods=['POST'])
