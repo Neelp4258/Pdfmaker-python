@@ -34,6 +34,31 @@ class HTMLSanitizer:
         if allow_scripts:
             self.DANGEROUS_TAGS = [t for t in self.DANGEROUS_TAGS if t != 'script']
 
+    def _detect_hosted_images(self, html: str) -> None:
+        """
+        Detect and log hosted images (http/https URLs) in HTML.
+
+        Args:
+            html: HTML string to analyze
+        """
+        # Pattern to match img tags with http/https src
+        img_pattern = r'<img[^>]+src=["\']?(https?://[^"\'>\s]+)["\']?[^>]*>'
+
+        hosted_images = re.findall(img_pattern, html, flags=re.IGNORECASE)
+
+        if hosted_images:
+            logger.info(f"🖼️  Found {len(hosted_images)} hosted image(s) in HTML:")
+            for idx, img_url in enumerate(hosted_images, 1):
+                logger.info(f"  [{idx}] {img_url}")
+            print(f"\n{'='*60}")
+            print(f"🖼️  HOSTED IMAGES DETECTED: {len(hosted_images)} image(s)")
+            print(f"{'='*60}")
+            for idx, img_url in enumerate(hosted_images, 1):
+                print(f"  [{idx}] {img_url}")
+            print(f"{'='*60}\n")
+        else:
+            logger.debug("No hosted images (http/https) found in HTML")
+
     def sanitize(self, html: str) -> str:
         """
         Sanitize HTML content.
@@ -45,7 +70,12 @@ class HTMLSanitizer:
             Sanitized HTML string
         """
         if not self.enabled:
+            # Still detect images even if sanitization is disabled
+            self._detect_hosted_images(html)
             return html
+
+        # Detect hosted images before sanitization
+        self._detect_hosted_images(html)
 
         # Remove dangerous tags
         for tag in self.DANGEROUS_TAGS:
