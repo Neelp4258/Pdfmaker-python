@@ -70,6 +70,8 @@ class Config:
     ]
     CHROMIUM_POOL_SIZE = int(os.getenv('CHROMIUM_POOL_SIZE', '4'))
     CHROMIUM_TIMEOUT = int(os.getenv('CHROMIUM_TIMEOUT_MS', '30000'))
+    # Page load strategy: 'networkidle' waits for images/resources, 'domcontentloaded' is faster
+    PAGE_LOAD_STRATEGY = os.getenv('PAGE_LOAD_STRATEGY', 'networkidle')
 
     # Security settings for URL rendering
     ALLOW_URL_RENDERING = os.getenv('ALLOW_URL_RENDERING', 'True').lower() == 'true'
