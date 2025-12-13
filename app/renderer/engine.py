@@ -280,6 +280,9 @@ class PDFRenderer:
 
             # Load content
             chromium_timeout = self._get_config('CHROMIUM_TIMEOUT', 30000)
+            # Get wait strategy: 'networkidle' waits for images, 'domcontentloaded' is faster but may miss images
+            wait_strategy = self._get_config('PAGE_LOAD_STRATEGY', 'networkidle')
+
             if html:
                 logger.debug("Loading HTML content...")
                 # Sanitize HTML if configured
@@ -293,13 +296,13 @@ class PDFRenderer:
                 else:
                     html = f'{page_css}{html}'
 
-                logger.debug(f"Setting page content (timeout: {chromium_timeout}ms)...")
-                # Use 'domcontentloaded' instead of 'networkidle' to prevent hanging
-                await page.set_content(html, wait_until='domcontentloaded', timeout=chromium_timeout)
+                logger.debug(f"Setting page content (timeout: {chromium_timeout}ms, wait_until: {wait_strategy})...")
+                # Use configurable wait strategy - 'networkidle' ensures images load, 'domcontentloaded' is faster
+                await page.set_content(html, wait_until=wait_strategy, timeout=chromium_timeout)
                 logger.debug("Page content set successfully")
             else:
-                logger.debug(f"Navigating to URL: {url}")
-                await page.goto(url, wait_until='domcontentloaded', timeout=chromium_timeout)
+                logger.debug(f"Navigating to URL: {url} (wait_until: {wait_strategy})...")
+                await page.goto(url, wait_until=wait_strategy, timeout=chromium_timeout)
                 logger.debug("URL navigation complete")
 
                 # Inject CSS for URL rendering

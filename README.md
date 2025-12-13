@@ -439,6 +439,10 @@ ASYNC_JOB_TIMEOUT_SEC=600
 CELERY_WORKER_CONCURRENCY=4
 CHROMIUM_POOL_SIZE=4
 
+# Page Loading (important for hosted images)
+PAGE_LOAD_STRATEGY=networkidle  # Wait for images (recommended)
+# or 'domcontentloaded' for faster rendering
+
 # Storage
 STORAGE_TYPE=local  # or s3, gcs
 STORAGE_PATH=/tmp/html2pdf
@@ -595,6 +599,13 @@ pytest tests/test_api.py
 - Reduce `CHROMIUM_POOL_SIZE`
 - Increase `CHROMIUM_TIMEOUT_MS`
 - Add `--no-sandbox` to `CHROMIUM_ARGS` (Docker)
+
+**Hosted images not rendering in PDF:**
+- Set `PAGE_LOAD_STRATEGY=networkidle` (default) to wait for images to load
+- Check logs for "HOSTED IMAGES DETECTED" message to see which images were found
+- Use `PAGE_LOAD_STRATEGY=domcontentloaded` for faster rendering without waiting for images
+- Increase `CHROMIUM_TIMEOUT_MS` if images are slow to load
+- Disable `NETWORK_ISOLATION` to allow external image loading
 
 **Rate limit errors:**
 - Adjust `RATE_LIMIT_PER_MINUTE` and `RATE_LIMIT_PER_HOUR`
