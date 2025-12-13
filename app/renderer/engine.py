@@ -111,10 +111,16 @@ class PDFRenderer:
             }}
 
             /* Ensure backgrounds and colors are printed */
-            * {{
+            *, *::before, *::after {{
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
                 color-adjust: exact !important;
+            }}
+
+            /* Force background rendering */
+            body, div, section, header, footer, main, article, aside {{
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }}
 
             /* Body sizing */
@@ -266,6 +272,11 @@ class PDFRenderer:
             logger.debug("Creating new page...")
             page = await context.new_page()
             logger.debug("New page created")
+
+            # Emulate screen media to preserve colors and backgrounds
+            # This prevents the browser from using print styles that strip backgrounds
+            await page.emulate_media(media='screen')
+            logger.debug("Emulated screen media to preserve exact HTML styling")
 
             # Set viewport to match page dimensions
             await page.set_viewport_size({
