@@ -33,7 +33,7 @@ class Config:
     MAX_HTML_SIZE = int(os.getenv('MAX_HTML_SIZE_MB', '50')) * 1024 * 1024  # Default 50MB
 
     # Job processing timeouts
-    SYNC_JOB_TIMEOUT = int(os.getenv('SYNC_JOB_TIMEOUT_SEC', '30'))  # 30 seconds for sync
+    SYNC_JOB_TIMEOUT = int(os.getenv('SYNC_JOB_TIMEOUT_SEC', '120'))  # 2 minutes for sync (increased for images)
     ASYNC_JOB_TIMEOUT = int(os.getenv('ASYNC_JOB_TIMEOUT_SEC', '600'))  # 10 minutes for async
 
     # Celery configuration
@@ -69,7 +69,7 @@ class Config:
         '--disable-gpu',
     ]
     CHROMIUM_POOL_SIZE = int(os.getenv('CHROMIUM_POOL_SIZE', '4'))
-    CHROMIUM_TIMEOUT = int(os.getenv('CHROMIUM_TIMEOUT_MS', '30000'))
+    CHROMIUM_TIMEOUT = int(os.getenv('CHROMIUM_TIMEOUT_MS', '60000'))  # 60 seconds (increased for image loading)
     # Page load strategy: 'networkidle' waits for images/resources, 'domcontentloaded' is faster
     PAGE_LOAD_STRATEGY = os.getenv('PAGE_LOAD_STRATEGY', 'networkidle')
 
