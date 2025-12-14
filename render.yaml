@@ -6,7 +6,7 @@ services:
   - type: web
     name: html2pdf-api
     env: docker
-    plan: starter
+    plan: standard  # REQUIRES 2GB+ RAM for Chromium! Use 'standard' or 'pro'
     dockerfilePath: ./Dockerfile
     dockerContext: .
     region: oregon
@@ -55,6 +55,12 @@ services:
         value: true
       - key: GENERATION_PASSWORD
         value: Bhavani@102005
+      - key: CHROMIUM_POOL_SIZE
+        value: 1  # Reduce to 1 to save memory (each instance = ~300MB RAM)
+      - key: PAGE_LOAD_STRATEGY
+        value: networkidle
+      - key: CHROMIUM_TIMEOUT_MS
+        value: 60000
 
   # Celery Worker Service
   - type: worker
@@ -62,8 +68,8 @@ services:
     env: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    dockerCommand: celery -A celery_worker.celery_app worker --loglevel=info --concurrency=2
-    plan: starter
+    dockerCommand: celery -A celery_worker.celery_app worker --loglevel=info --concurrency=1
+    plan: standard  # REQUIRES 2GB+ RAM for Chromium! Use 'standard' or 'pro'
     region: oregon
     envVars:
       - key: FLASK_ENV
@@ -90,7 +96,13 @@ services:
       - key: STORAGE_PATH
         value: /tmp/html2pdf
       - key: CELERY_WORKER_CONCURRENCY
-        value: 2
+        value: 1  # Reduce to 1 to save memory
+      - key: CHROMIUM_POOL_SIZE
+        value: 1  # Reduce to 1 to save memory (each instance = ~300MB RAM)
+      - key: PAGE_LOAD_STRATEGY
+        value: networkidle
+      - key: CHROMIUM_TIMEOUT_MS
+        value: 60000
 
   # Redis Service
   - type: redis
@@ -101,6 +113,16 @@ services:
 
 # Notes:
 # 1. After deployment, update API_KEYS in the Render dashboard
-# 2. Free tier services sleep after 15 minutes of inactivity
-# 3. Upgrade to paid plans for production use
-# 4. Starter plan: $7/month per service
+# 2. IMPORTANT: Chromium requires at least 2GB RAM!
+#    - Starter plan (512MB) = OUT OF MEMORY ERRORS ❌
+#    - Standard plan (2GB) = Works properly ✅
+#    - Pro plan (4GB+) = Recommended for production ✅
+# 3. Free tier services sleep after 15 minutes of inactivity
+# 4. Pricing (as of 2024):
+#    - Starter: $7/month per service (512MB RAM - NOT ENOUGH)
+#    - Standard: $25/month per service (2GB RAM - MINIMUM REQUIRED)
+#    - Pro: $85/month per service (4GB RAM - RECOMMENDED)
+# 5. Memory optimization tips:
+#    - CHROMIUM_POOL_SIZE=1 reduces RAM usage
+#    - Use async endpoint (/render) instead of sync for large files
+#    - Consider using domcontentloaded instead of networkidle for faster/less memory
