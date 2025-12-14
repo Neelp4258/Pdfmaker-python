@@ -111,7 +111,10 @@ Include your API key in requests:
 
 #### `POST /render-sync` - Synchronous Rendering
 
-Returns PDF immediately (30s timeout by default).
+Returns PDF immediately (2 minute timeout by default).
+
+**Use for:** Small HTML files with few or no hosted images
+**Avoid for:** Large files or files with many hosted images (use `/render` instead)
 
 **Request:**
 ```json
@@ -129,7 +132,10 @@ Returns PDF immediately (30s timeout by default).
 
 #### `POST /render` - Asynchronous Rendering
 
-Queues job and returns job ID.
+Queues job and returns job ID (10 minute timeout by default).
+
+**Use for:** Large HTML files, files with many hosted images, or production use
+**Recommended:** This endpoint is more reliable for all file sizes
 
 **Request:** Same as `/render-sync`
 
@@ -607,13 +613,23 @@ pytest tests/test_api.py
 - Increase `CHROMIUM_TIMEOUT_MS` if images are slow to load
 - Disable `NETWORK_ISOLATION` to allow external image loading
 
+**HTTP 502 errors with large files or many images:**
+- **Root cause**: Timeouts when loading many hosted images with `PAGE_LOAD_STRATEGY=networkidle`
+- **Quick fix**: Use `/render` (async) endpoint instead of `/render-sync` for large files
+- **Increase timeouts**:
+  - Set `CHROMIUM_TIMEOUT_MS=90000` (90 seconds) or higher
+  - Set `SYNC_JOB_TIMEOUT_SEC=180` (3 minutes) or higher
+  - For very large files, use async endpoint with `ASYNC_JOB_TIMEOUT_SEC=600`
+- **Alternative**: Use `PAGE_LOAD_STRATEGY=domcontentloaded` for faster rendering (images may not load)
+- **On Render.com/hosting platforms**: Increase server timeout or use async endpoint
+
 **Rate limit errors:**
 - Adjust `RATE_LIMIT_PER_MINUTE` and `RATE_LIMIT_PER_HOUR`
 - Use multiple API keys for higher limits
 
 **Large PDFs fail:**
 - Increase `ASYNC_JOB_TIMEOUT_SEC`
-- Use async endpoint instead of sync
+- Use async endpoint (`/render`) instead of sync (`/render-sync`)
 - Enable streaming for very large HTMLs
 
 **SSRF concerns:**
